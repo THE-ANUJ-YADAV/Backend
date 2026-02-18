@@ -1,39 +1,76 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 
 const App = () => {
 
-  axios.get('http://localhost:3000/api/notes')
-  .then((res)=>{
-    setnotes(res.data.notes)
-  })
+  const [notes, setnotes] = useState([])
+  const [updateTitle, setUpdateTitle] = useState({});
 
-  const [notes, setnotes] = useState([{
-    title: "test title 1",
-    description: "test description"
-  },
-  {
-    title: "test title 2",
-    description: "test description"
-  },
-  {
-    title: "test title 3",
-    description: "test description"
-  },
-  {
-    title: "test title 4",
-    description: "test description"
+
+  function fetchNotes(){
+    axios.get("http://localhost:3000/api/notes")
+      .then(res =>{
+        setnotes(res.data.notes)
+     })
   }
-])
+  useEffect(()=>{
+      fetchNotes()
+  },[])
+
+  function handleSubmit(e){
+      e.preventDefault()
+
+      const {title , description } = e.target.elements
+      console.log(title.value , description.value)
+
+      axios.post("http://localhost:3000/api/notes",{
+        title : title.value,
+        description : description.value
+      })
+      .then((res) =>{
+       fetchNotes()
+      })
+
+    }
+
+  function handleDeleteNote(noteId){
+    axios.delete("http://localhost:3000/api/notes/"+noteId)
+    .then(res =>{
+      console.log(res.data)
+      fetchNotes()
+    })
+  }
+
+ function handleUpdateNote(noteId){
+  const newDescription = prompt("Enter new Description");
+
+  axios.patch("http://localhost:3000/api/notes/"+noteId,
+    {description : newDescription}
+  )
+  .then((res)=>{
+    console.log(res.data);
+    fetchNotes();
+  })
+ }
+
 
   return (
     <>
+    
+    <form className='note-create-form' onSubmit={handleSubmit}>
+      <input type="text" placeholder='Enter title' name='title'  />
+      <input type="text" placeholder='Enter Description' name='description' />
+      <button>Create note</button>
+    </form>
+
     <div className="notes">
       {
         notes.map(note=>{
            return <div className="note">
               <h1>{note.title}</h1>
               <p>{note.description}</p>
+              <button onClick={()=>{handleDeleteNote(note._id)}}>Delete</button>
+              <button onClick={()=> {handleUpdateNote(note._id)}}>Update</button>
             </div>
         })
       }
